@@ -12,16 +12,20 @@ function createRoadilySupabase(client) {
     if (!/^\+[1-9]\d{7,14}$/.test(s)) throw Error('Enter a valid phone number including the country code.');
     return s;
   };
+  const confirmed = u => {
+    if (!u?.phone_confirmed_at) throw Error('Verify your phone before signing in.');
+    return u;
+  };
   const user = async () => {
     if (!checked(await client.auth.getSession()).session) return null;
-    return checked(await client.auth.getUser()).user;
+    return confirmed(checked(await client.auth.getUser()).user);
   };
   return async function api(path, options = {}) {
     const method = options.method || 'GET';
     const b = options.body ? JSON.parse(options.body) : {};
     if (path === '/me' && method === 'GET') return { user: profile(await user()) };
     if (path === '/login' && method === 'POST') {
-      return { user: profile(checked(await client.auth.signInWithPassword({ phone: phoneOf(b.phone), password: b.password })).user) };
+      return { user: profile(confirmed(checked(await client.auth.signInWithPassword({ phone: phoneOf(b.phone), password: b.password })).user)) };
     }
     if (path === '/register' && method === 'POST') {
       const phone = phoneOf(b.phone);
@@ -29,13 +33,17 @@ function createRoadilySupabase(client) {
       if (!name || name.length > 80) throw Error('Enter a name up to 80 characters.');
       if (typeof b.password !== 'string' || b.password.length < 8) throw Error('Use a password of at least 8 characters.');
       const data = checked(await client.auth.signUp({phone, password: b.password, options: { data: { display_name: name } }}));
-      return data.session ? { user: profile(data.user) } : { verification_required: true, phone };
+      if (data.session) {
+        await client.auth.signOut({scope:'local'});
+        throw Error('Phone confirmation must be enabled on this Roadily project.');
+      }
+      return { verification_required: true, phone };
     }
     if (path === '/verify-phone' && method === 'POST') {
       if (!/^\d{6}$/.test(b.token || '')) throw Error('Enter the six-digit SMS code.');
-      return { user: profile(checked(await client.auth.verifyOtp({ phone: phoneOf(b.phone), token: b.token, type: 'sms' })).user) };
+      return { user: profile(confirmed(checked(await client.auth.verifyOtp({ phone: phoneOf(b.phone), token: b.token, type: 'sms' })).user)) };
     }
-    if (path === '/logout' && method === 'POST') { checked(await client.auth.signOut()); return {}; }
+    if (path === '/logout' && method === 'POST') { checked(await client.auth.signOut({scope:'local'})); return {}; }
     if (path === '/wallet' && method === 'GET') return {available_balance: null, payout_account: null};
     if (path === '/requests' && method === 'GET') return {requests: []};
     if (path === '/vehicles' || /^\/vehicles\/\d+\/settings$/.test(path)) {

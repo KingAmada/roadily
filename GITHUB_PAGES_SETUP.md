@@ -13,12 +13,18 @@ The QR generator operates in the browser, but the destination /v/<token> must ex
 ## SEO
 GitHub Pages serves actual `.html` files. This branch updates links to include that extension and makes asset paths relative to /roadily/. After publishing verify robots.txt, sitemap.xml, icons, share previews, and indexed pages in Search Console. Private vehicle and account records should not be indexed. Sitemap assumes project Pages URL, so change it if you move to a domain.
 
-## Optional Supabase connection (phone auth and private vehicle records)
+## Dedicated Supabase connection: private vehicles only
 
-1. Use a dedicated Supabase project for Roadily, not another product's project. Apply the migration under `supabase/migrations/`.
-2. In Authentication, enable the Phone provider and phone confirmation. Configure an SMS provider and review signup rate limits and abuse controls before publicly enabling sign-up. Use a password minimum of at least 8 characters.
-3. Set the project URL and publishable key in `roadily-config.js`. Never commit a secret/service-role key, SMS credentials, or a database password.
-4. On a test deployment, register a test number, verify its SMS, refresh, sign out and back in, and add a private vehicle. Confirm that a second verified account cannot read or change the first account's records. No legacy accounts or vehicle data are imported.
-5. Payout account collection, balances, transfers, public plate/QR lookups, messaging, and ownership verification are not connected by this change. Do not distribute QR stickers or advertise real-money functionality until those are separately implemented and approved.
+The public browser URL and publishable key in `roadily.config.js` point to
+Roadily's own project. Never add a secret or service-role key here.
+The hosted `roadily_core` migration creates only the private vehicle table;
+it does not handle payment, balances, withdrawals, messages or public QR lookup.
 
-Blank configuration leaves the legacy backend unchanged. Test the adapter with `node --test tests/roadily-supabase.test.cjs`.
+The site remains unchanged while `ROADILY_SUPABASE.enabled` is false. To
+test in a local/private preview, configure an approved SMS provider under
+[Authentication → Phone](https://supabase.com/dashboard/project/asazccxbrlflreeamokl/auth/providers),
+enable phone sign-in and keep phone confirmation on. Set `enabled: true` only
+in the preview configuration and leave `ROADILY_API_BASE` blank. Test SMS
+verification, reload, sign-out, and separate vehicle lists for two accounts
+before enabling on GitHub Pages. The existing Roadily API takes precedence
+when configured; its sessions are not interchangeable with Supabase sessions.
