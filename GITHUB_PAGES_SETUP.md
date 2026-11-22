@@ -20,11 +20,15 @@ Roadily's own project. Never add a secret or service-role key here.
 The hosted `roadily_core` migration creates only the private vehicle table;
 it does not handle payment, balances, withdrawals, messages or public QR lookup.
 
-The site remains unchanged while `ROADILY_SUPABASE.enabled` is false. To
-test in a local/private preview, configure an approved SMS provider under
-[Authentication → Phone](https://supabase.com/dashboard/project/asazccxbrlflreeamokl/auth/providers),
-enable phone sign-in and keep phone confirmation on. Set `enabled: true` only
-in the preview configuration and leave `ROADILY_API_BASE` blank. Test SMS
-verification, reload, sign-out, and separate vehicle lists for two accounts
-before enabling on GitHub Pages. The existing Roadily API takes precedence
-when configured; its sessions are not interchangeable with Supabase sessions.
+The site remains unchanged while `ROADILY_SUPABASE.enabled` is false. In
+[Authentication → Sign In / Providers](https://supabase.com/dashboard/project/asazccxbrlflreeamokl/auth/providers),
+enable the Phone provider and turn off Confirm phone for this no-SMS pilot.
+Use `enabled: true` only after checking hosted phone/password signup and
+sign-in plus separate vehicle lists for two accounts. Leave `ROADILY_API_BASE`
+blank in this mode. The existing Roadily API takes precedence when configured;
+its sessions are not interchangeable with Supabase sessions.
+
+A number is only a sign-in label, not proof of control of that number,
+the account holder’s identity, or plate ownership. SMS, phone-based recovery,
+public profiles, money features and staff access are not offered in this mode.
+Do not use the number for authorization, recovery, discovery or payouts.

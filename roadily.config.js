@@ -5,7 +5,7 @@ window.ROADILY_API_BASE = '';
 window.ROADILY_PUBLIC_ORIGIN = '';
 
 // Dedicated Roadily Supabase project. These browser values are public.
-// Enable only after hosted phone confirmation and an SMS provider are tested.
+// Enable only after hosted phone/password without SMS is tested.
 // Don't enable alongside a separate Roadily API (sessions are not interchangeable).
 window.ROADILY_SUPABASE = Object.freeze({
   enabled: false,
