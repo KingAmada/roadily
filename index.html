@@ -1287,10 +1287,40 @@ window.RoadilyQRLevel=localRequire('QRErrorCorrectLevel');
 const $=id=>document.getElementById(id);let me=null,authMode='login',vehicles=[],selectedVehicle=null,scanStream=null,scanFrame=0,scanTarget='lookup',selectedReason='Let me merge',selectedReward=200,activeConversation=null;
 function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[x]))}function notice(t){$('notice').textContent=t;$('notice').style.display='block';clearTimeout(notice.t);notice.t=setTimeout(()=>$('notice').style.display='none',4500)}
 async function api(path,opt={}){let r=await fetch((window.ROADILY_API_BASE||'').replace(/\/$/,'')+'/api'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opt});let x=await r.json().catch(()=>({error:'Unexpected server response'}));if(!r.ok)throw Error(x.error||`Request failed (${r.status})`);return x}async function post(path,body){return api(path,{method:'POST',body:JSON.stringify(body)})}
-function authScreen(mode){authMode=mode==='register'?'login':'register';toggleAuth();$('landing').classList.add('hide');$('auth').classList.remove('hide');window.scrollTo({top:0,behavior:'smooth'})}
+function authScreen(mode){if(!roadilyApiConfigured()){notice('Roadily accounts are not online yet. A secure backend must be connected before registration and sign-in can work.');return;}authMode=mode==='register'?'login':'register';toggleAuth();$('landing').classList.add('hide');$('auth').classList.remove('hide');window.scrollTo({top:0,behavior:'smooth'})}
 function toggleAuth(){authMode=authMode==='login'?'register':'login';let newUser=authMode==='register';$('nameField').classList.toggle('hide',!newUser);$('bankRegistration').classList.toggle('hide',!newUser);$('authBankNumber').required=newUser;$('authBank').required=newUser;$('authTitle').innerHTML=newUser?'Create your <span class="gradient">identity.</span>':'Welcome <span class="gradient">back.</span>';$('authSub').textContent=newUser?'One account for your vehicles, rewards and connections.':'Sign in to your secure Roadily identity.';$('authSubmit').textContent=newUser?'Create account →':'Sign in →';$('authSwitch').textContent=newUser?'Already have an account? Sign in':'New here? Create account';$('authPassword').autocomplete=newUser?'new-password':'current-password';if(newUser)loadBanks()}
 $('authForm').addEventListener('submit',async e=>{e.preventDefault();try{let body={phone:$('authPhone').value,password:$('authPassword').value};if(authMode==='register'){body.name=$('authName').value;body.bank_name=$('authBank').value;body.bank_code=bankCodeFor(body.bank_name);body.bank_account_number=$('authBankNumber').value;}let x=await post(authMode==='register'?'/register':'/login',body);me=x.user;renderLogin();notice('Signed in successfully')}catch(err){notice(err.message)}});
-async function boot(){try{let x=await api('/me');me=x.user;if(location.pathname.startsWith('/v/')){let token=location.pathname.slice(3);sessionStorage.setItem('rk_scanned',token)}renderLogin();if(me&&sessionStorage.getItem('rk_scanned')){let token=sessionStorage.getItem('rk_scanned');sessionStorage.removeItem('rk_scanned');await lookupByToken(token)}}catch(e){notice('Unable to reach the Roadily server. Run server.py to enable accounts and QR profiles.')}}
+function roadilyApiConfigured(){
+  // GitHub Pages is a static website. It cannot serve /api endpoints.
+  return !location.hostname.endsWith('.github.io') || Boolean(String(window.ROADILY_API_BASE||'').trim());
+}
+function showPublicBackendNotice(){
+  const landing=$('landing'); if(!landing||$('roadily-backend-status'))return;
+  const info=document.createElement('div');info.id='roadily-backend-status';info.className='note';
+  info.style.cssText='margin:18px 0;padding:16px 17px;border:1px solid #dedcff;background:#f7f6ff;color:#4c5279;border-radius:17px;font-size:12px;line-height:1.7';
+  info.innerHTML='<strong>Roadily is online — accounts are coming soon.</strong><div>Explore the platform below. Vehicle registration, sign-in, chat and payments need a connected secure server.</div>';
+  const art=landing.querySelector('.landing-art');
+  if(art)art.insertAdjacentElement('afterend',info);else landing.prepend(info);
+}
+async function boot(){
+  // Always render the public website, even when the API is unavailable.
+  renderLogin();
+  if(!roadilyApiConfigured()){showPublicBackendNotice();return;}
+  try{
+    const x=await api('/me');me=x.user;
+    if(location.pathname.startsWith('/v/')){
+      const token=location.pathname.slice(3);sessionStorage.setItem('rk_scanned',token);
+    }
+    renderLogin();
+    if(me&&sessionStorage.getItem('rk_scanned')){
+      const token=sessionStorage.getItem('rk_scanned');sessionStorage.removeItem('rk_scanned');
+      await lookupByToken(token);
+    }
+  }catch(e){
+    // A backend outage must never blank Roadily's public homepage.
+    me=null;renderLogin();showPublicBackendNotice();
+  }
+}
 function renderLogin(){let logged=!!me;$('auth').classList.add('hide');$('landing').classList.toggle('hide',logged);$('logged').classList.toggle('hide',!logged);$('nav').classList.toggle('hide',!logged);$('top').classList.toggle('hide',!logged);if(logged){$('topAccount').textContent=(me.display_name||'U').trim().charAt(0).toUpperCase();$('topAccount').title='Account: '+(me.display_name||'');$('heroName').textContent=me.display_name;$('greeting').textContent='HELLO, '+me.display_name.toUpperCase();$('accountDetail').innerHTML=`<b>${escapeHtml(me.display_name)}</b><p class="sub">${escapeHtml(me.phone)}</p>`;loadVehicles();loadRequests();loadWallet()}}
 let roadilyBanks=[],banksLoading=null;
 function bankCodeFor(name){return roadilyBanks.find(b=>b.name.toLowerCase()===String(name||'').trim().toLowerCase())?.code||''}
