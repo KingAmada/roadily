@@ -12,3 +12,13 @@ The QR generator operates in the browser, but the destination /v/<token> must ex
 
 ## SEO
 GitHub Pages serves actual `.html` files. This branch updates links to include that extension and makes asset paths relative to /roadily/. After publishing verify robots.txt, sitemap.xml, icons, share previews, and indexed pages in Search Console. Private vehicle and account records should not be indexed. Sitemap assumes project Pages URL, so change it if you move to a domain.
+
+## Optional Supabase connection (phone auth and private vehicle records)
+
+1. Use a dedicated Supabase project for Roadily, not another product's project. Apply the migration under `supabase/migrations/`.
+2. In Authentication, enable the Phone provider and phone confirmation. Configure an SMS provider and review signup rate limits and abuse controls before publicly enabling sign-up. Use a password minimum of at least 8 characters.
+3. Set the project URL and publishable key in `roadily-config.js`. Never commit a secret/service-role key, SMS credentials, or a database password.
+4. On a test deployment, register a test number, verify its SMS, refresh, sign out and back in, and add a private vehicle. Confirm that a second verified account cannot read or change the first account's records. No legacy accounts or vehicle data are imported.
+5. Payout account collection, balances, transfers, public plate/QR lookups, messaging, and ownership verification are not connected by this change. Do not distribute QR stickers or advertise real-money functionality until those are separately implemented and approved.
+
+Blank configuration leaves the legacy backend unchanged. Test the adapter with `node --test tests/roadily-supabase.test.cjs`.
