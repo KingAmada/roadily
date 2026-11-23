@@ -12,3 +12,18 @@ The QR generator operates in the browser, but the destination /v/<token> must ex
 
 ## SEO
 GitHub Pages serves actual `.html` files. This branch updates links to include that extension and makes asset paths relative to /roadily/. After publishing verify robots.txt, sitemap.xml, icons, share previews, and indexed pages in Search Console. Private vehicle and account records should not be indexed. Sitemap assumes project Pages URL, so change it if you move to a domain.
+
+## Roadily server-owned phone/password pilot
+
+This path does **not** use Supabase Auth. The optional Roadily Edge API handles
+passwords and revocable 12-hour sessions, with session credentials only in
+browser memory. Closing or refreshing the page requires signing in again.
+Numbers are login identifiers, not verified identities. There is no SMS,
+phone recovery, public plate claim, public QR, chat, payments or staff access
+in this path. Do not use a Roadily phone account to authorize bank operations.
+
+The private database schema is accessible only to the server-side role. Do not
+copy any Supabase private keys into GitHub or public configuration. Hosted
+Edge injection supplies the server credentials. The function requires gateway
+JWT verification off because it accepts Roadily's own opaque sessions and
+performs its own request validation, throttling and authorization.
